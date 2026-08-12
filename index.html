@@ -1,0 +1,1404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Tactical Intelligence Report: Freeze Frame analysis of the FIFA World Cup 2022 Final between Argentina and France. Eight shots analyzed with StatsBomb data, goalkeeper distance, and shot-lane geometry." />
+  <meta name="author" content="Performance Analytics Department" />
+  <meta name="keywords" content="football analytics, freeze frame, StatsBomb, xG, Argentina, France, World Cup 2022, tactical analysis" />
+  <title>Argentina vs France &middot; WC 2022 Final &middot; Tactical Intelligence Report</title>
+  <style>
+
+:root {
+  --bg:        #0B1220;
+  --panel:     #0F1A2E;
+  --panel-2:   #131F36;
+  --border:    #1F2A44;
+  --border-2:  #2A3759;
+  --text:      #E6EDF7;
+  --text-soft: #B6C5DC;
+  --subtext:   #8FA3C2;
+  --muted:     #5A6B8A;
+  --accent:    #22D3A5;
+  --accent-2:  #38BDF8;
+  --warn:      #F5B042;
+  --danger:    #E5484D;
+  --arg:       #75AADB;
+  --fra:       #4F7CC4;
+  --code-bg:   #0A0F1C;
+  --code-border: #1A2540;
+  --shadow:    0 4px 24px rgba(0,0,0,0.45);
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 15px; line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+.container { max-width: 1100px; margin: 0 auto; padding: 0 32px; }
+
+.cover {
+  min-height: 100vh;
+  display: flex; flex-direction: column;
+  justify-content: space-between;
+  padding: 64px 48px 40px;
+  background:
+    radial-gradient(ellipse at top right, rgba(34, 211, 165, 0.08), transparent 60%),
+    radial-gradient(ellipse at bottom left, rgba(56, 189, 248, 0.08), transparent 60%),
+    linear-gradient(180deg, #0B1220 0%, #0F1A2E 100%);
+  border-bottom: 1px solid var(--border);
+  position: relative; overflow: hidden;
+}
+.cover::before {
+  content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  background-image:
+    linear-gradient(rgba(31, 42, 68, 0.18) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(31, 42, 68, 0.18) 1px, transparent 1px);
+  background-size: 48px 48px;
+  pointer-events: none;
+  mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
+  -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
+}
+.cover-top { display: flex; justify-content: space-between; align-items: flex-start; position: relative; z-index: 2; }
+.cover-badge {
+  font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace;
+  font-size: 11px; letter-spacing: 0.18em; color: var(--accent);
+  text-transform: uppercase;
+  border: 1px solid var(--accent); padding: 6px 12px; border-radius: 4px;
+  background: rgba(34, 211, 165, 0.06);
+}
+.cover-classification {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 10px; letter-spacing: 0.16em; color: var(--subtext);
+  text-transform: uppercase; text-align: right;
+}
+.cover-classification .level { color: var(--warn); font-weight: 600; }
+.cover-center { position: relative; z-index: 2; margin-top: 80px; }
+.cover-eyebrow {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 13px; letter-spacing: 0.22em; color: var(--accent-2);
+  text-transform: uppercase; margin-bottom: 24px;
+}
+.cover-title {
+  font-size: 56px; font-weight: 800; line-height: 1.05;
+  letter-spacing: -0.02em; margin: 0 0 16px;
+  background: linear-gradient(135deg, #FFFFFF 0%, #B6C5DC 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.cover-subtitle {
+  font-size: 22px; font-weight: 400; color: var(--text-soft);
+  margin: 0 0 48px; line-height: 1.4;
+}
+.cover-flags { display: flex; align-items: center; gap: 24px; margin-bottom: 48px; }
+.flag-pill {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 10px 18px; background: var(--panel-2);
+  border: 1px solid var(--border-2); border-radius: 6px;
+  font-weight: 600; font-size: 14px;
+}
+.flag-pill .dot { width: 12px; height: 12px; border-radius: 50%; }
+.flag-pill.arg .dot { background: var(--arg); }
+.flag-pill.fra .dot { background: var(--fra); }
+.flag-pill .score {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  color: var(--subtext); font-weight: 400; margin-left: 6px;
+}
+.cover-vs {
+  color: var(--muted);
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 14px; letter-spacing: 0.1em;
+}
+.cover-meta {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px;
+  padding-top: 32px; border-top: 1px solid var(--border);
+  position: relative; z-index: 2;
+}
+.cover-meta-item .label {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 10px; letter-spacing: 0.16em; color: var(--muted);
+  text-transform: uppercase; margin-bottom: 6px;
+}
+.cover-meta-item .value { font-size: 15px; color: var(--text); font-weight: 500; }
+.cover-footer {
+  margin-top: 56px;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 11px; color: var(--muted); letter-spacing: 0.08em;
+  position: relative; z-index: 2;
+  display: flex; justify-content: space-between;
+}
+
+.toc { padding: 80px 48px; background: var(--bg); border-bottom: 1px solid var(--border); }
+.toc-eyebrow {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 11px; letter-spacing: 0.22em; color: var(--accent);
+  text-transform: uppercase; margin-bottom: 12px;
+}
+.toc-title { font-size: 36px; font-weight: 700; margin: 0 0 40px; letter-spacing: -0.01em; }
+.toc-list { list-style: none; padding: 0; margin: 0; counter-reset: toc; }
+.toc-list li {
+  counter-increment: toc; display: flex; align-items: baseline;
+  padding: 16px 0; border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+}
+.toc-list li:hover { background: rgba(34, 211, 165, 0.04); }
+.toc-list a { color: var(--text); text-decoration: none; flex: 1; display: flex; align-items: baseline; gap: 18px; }
+.toc-list a::before {
+  content: "0" counter(toc);
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 13px; color: var(--accent); font-weight: 600;
+  letter-spacing: 0.05em; min-width: 32px;
+}
+.toc-list .toc-text { flex: 1; font-size: 17px; font-weight: 500; }
+.toc-list .toc-sub {
+  display: block; font-size: 12px; color: var(--subtext);
+  font-weight: 400; margin-top: 2px; letter-spacing: 0.02em;
+}
+.toc-list .toc-page {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 12px; color: var(--muted); letter-spacing: 0.05em;
+}
+
+main { padding: 0; }
+section { padding: 72px 0 64px; border-bottom: 1px solid var(--border); }
+section:last-of-type { border-bottom: none; }
+
+.section-header { margin-bottom: 40px; padding-bottom: 24px; border-bottom: 1px solid var(--border); }
+.section-eyebrow {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 11px; letter-spacing: 0.22em; color: var(--accent);
+  text-transform: uppercase; margin-bottom: 10px;
+  display: flex; align-items: center; gap: 12px;
+}
+.section-eyebrow .num { color: var(--muted); font-weight: 600; }
+h1, h2, h3, h4 { letter-spacing: -0.01em; }
+h2.section-title { font-size: 34px; font-weight: 700; margin: 0 0 8px; line-height: 1.2; }
+h2.section-title .icon { font-size: 28px; margin-right: 10px; vertical-align: -2px; }
+.section-deck { font-size: 16px; color: var(--text-soft); margin: 0; line-height: 1.5; }
+h3 { font-size: 22px; font-weight: 600; margin: 48px 0 16px; color: var(--text); }
+h3 .h3-tag {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 11px; color: var(--accent);
+  background: rgba(34, 211, 165, 0.1);
+  padding: 3px 8px; border-radius: 4px; margin-right: 10px;
+  vertical-align: 3px; letter-spacing: 0.05em; font-weight: 500;
+}
+h4 { font-size: 16px; font-weight: 600; margin: 28px 0 10px; color: var(--accent-2); }
+
+p { margin: 0 0 18px; color: var(--text-soft); }
+strong, b { color: var(--text); font-weight: 600; }
+em, i { color: var(--text); }
+a { color: var(--accent-2); text-decoration: none; border-bottom: 1px dotted var(--accent-2); }
+a:hover { color: var(--accent); border-bottom-color: var(--accent); }
+hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+ul, ol { padding-left: 22px; margin: 0 0 18px; color: var(--text-soft); }
+li { margin-bottom: 8px; }
+li::marker { color: var(--accent); }
+
+.callout {
+  background: var(--panel);
+  border-left: 3px solid var(--accent);
+  padding: 18px 22px; border-radius: 0 6px 6px 0; margin: 24px 0;
+}
+.callout.warn    { border-left-color: var(--warn); }
+.callout.danger  { border-left-color: var(--danger); }
+.callout.info    { border-left-color: var(--accent-2); }
+.callout-title {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--accent); margin-bottom: 8px; font-weight: 600;
+}
+.callout.warn .callout-title   { color: var(--warn); }
+.callout.danger .callout-title { color: var(--danger); }
+.callout.info .callout-title   { color: var(--accent-2); }
+.callout p:last-child { margin-bottom: 0; }
+.callout-body { color: var(--text-soft); font-size: 14.5px; }
+
+blockquote {
+  margin: 28px 0; padding: 16px 22px 16px 24px;
+  background: linear-gradient(90deg, rgba(34, 211, 165, 0.06), transparent);
+  border-left: 3px solid var(--accent);
+  color: var(--text); font-size: 15px; font-style: italic;
+  border-radius: 0 4px 4px 0;
+}
+blockquote p { margin: 0; color: var(--text); }
+blockquote strong { color: var(--accent); }
+
+.table-wrap {
+  margin: 28px 0; overflow-x: auto;
+  border-radius: 6px; border: 1px solid var(--border);
+}
+table {
+  width: 100%; border-collapse: collapse;
+  font-size: 13.5px; background: var(--panel);
+}
+thead { background: var(--panel-2); }
+th {
+  text-align: left; padding: 12px 14px; font-weight: 600; color: var(--text);
+  font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase;
+  border-bottom: 1px solid var(--border-2); white-space: nowrap;
+}
+td { padding: 11px 14px; color: var(--text-soft); border-bottom: 1px solid var(--border); vertical-align: middle; }
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover { background: rgba(34, 211, 165, 0.03); }
+td.num, th.num {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  text-align: right; font-variant-numeric: tabular-nums;
+}
+td .pill {
+  display: inline-block; padding: 2px 8px; border-radius: 3px;
+  font-size: 11px; font-weight: 600; letter-spacing: 0.02em;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+}
+.pill.goal    { background: rgba(34, 211, 165, 0.15); color: var(--accent); border: 1px solid rgba(34, 211, 165, 0.3); }
+.pill.saved   { background: rgba(245, 176, 66, 0.15); color: var(--warn); border: 1px solid rgba(245, 176, 66, 0.3); }
+.pill.blocked { background: rgba(229, 72, 77, 0.15); color: var(--danger); border: 1px solid rgba(229, 72, 77, 0.3); }
+.pill.offt    { background: rgba(154, 165, 175, 0.15); color: #C5CBD6; border: 1px solid rgba(154, 165, 175, 0.3); }
+.pill.arg { background: rgba(117, 170, 219, 0.15); color: var(--arg); border: 1px solid rgba(117, 170, 219, 0.3); }
+.pill.fra { background: rgba(79, 124, 196, 0.15); color: var(--fra); border: 1px solid rgba(79, 124, 196, 0.3); }
+
+pre.code {
+  background: var(--code-bg);
+  border: 1px solid var(--code-border);
+  border-radius: 6px; padding: 20px 22px;
+  overflow-x: auto; margin: 24px 0;
+  font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace;
+  font-size: 13px; line-height: 1.65; color: #D8E1EF;
+  position: relative;
+}
+pre.code .code-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin: -20px -22px 16px; padding: 10px 18px;
+  background: rgba(255,255,255,0.02);
+  border-bottom: 1px solid var(--code-border);
+  border-radius: 6px 6px 0 0;
+  font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--subtext);
+}
+pre.code .code-lang { color: var(--accent); font-weight: 600; }
+pre.code .code-dots { display: inline-flex; gap: 6px; margin-right: 12px; }
+pre.code .code-dots span { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+pre.code .dot-r { background: #FF5F56; }
+pre.code .dot-y { background: #FFBD2E; }
+pre.code .dot-g { background: #27C93F; }
+code { font-family: 'JetBrains Mono', 'Fira Code', monospace; }
+p > code, li > code {
+  background: var(--code-bg); color: var(--accent);
+  padding: 2px 6px; border-radius: 3px;
+  font-size: 0.88em; border: 1px solid var(--code-border);
+}
+.kw { color: #C792EA; }
+.str { color: #C3E88D; }
+.com { color: #5A6B8A; font-style: italic; }
+.fn { color: #82AAFF; }
+.num-lit { color: #F78C6C; }
+.op { color: #89DDFF; }
+.var { color: #FFCB6B; }
+.ty { color: #FFCB6B; }
+
+.math-display {
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: 6px; padding: 24px 28px; margin: 24px 0;
+  text-align: center;
+  font-family: 'Cambria Math', 'Latin Modern Math', 'STIX Two Math', Georgia, serif;
+  font-size: 22px; color: var(--text);
+  overflow-x: auto;
+}
+.math-display .math-label {
+  display: block;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--subtext); margin-bottom: 14px;
+}
+.math-display .eq { font-style: italic; }
+.math-display .sqrt {
+  border-top: 1.5px solid var(--text); padding-top: 2px; margin-top: 1px;
+  display: inline-block;
+}
+.math-display sub, .math-display sup { font-size: 0.65em; font-style: normal; }
+.math-inline {
+  font-family: 'Cambria Math', Georgia, serif;
+  font-style: italic; color: var(--text);
+}
+
+figure.shot-fig {
+  margin: 28px 0 36px; background: var(--panel);
+  border: 1px solid var(--border); border-radius: 6px; overflow: hidden;
+}
+figure.shot-fig .fig-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 18px; background: var(--panel-2);
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap; gap: 8px;
+}
+figure.shot-fig .fig-id {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 12px; color: var(--accent); font-weight: 600; letter-spacing: 0.05em;
+}
+figure.shot-fig .fig-meta {
+  display: flex; align-items: center; gap: 12px;
+  font-size: 12px; color: var(--subtext);
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  flex-wrap: wrap;
+}
+figure.shot-fig .fig-meta .sep { color: var(--muted); }
+figure.shot-fig img { width: 100%; display: block; background: #0B1220; }
+figure.shot-fig figcaption {
+  padding: 14px 18px; font-size: 13px; color: var(--text-soft);
+  border-top: 1px solid var(--border); line-height: 1.55;
+}
+figure.shot-fig figcaption strong { color: var(--text); }
+figure.shot-fig .fig-stats {
+  display: flex; gap: 18px; margin-top: 10px; flex-wrap: wrap;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 12px;
+}
+figure.shot-fig .fig-stats .stat { color: var(--subtext); }
+figure.shot-fig .fig-stats .stat .v {
+  color: var(--text); font-weight: 600; margin-left: 4px;
+}
+
+figure.fig-wide {
+  margin: 36px 0; background: var(--panel);
+  border: 1px solid var(--border); border-radius: 6px; overflow: hidden;
+}
+figure.fig-wide .fig-header {
+  padding: 14px 20px; background: var(--panel-2);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 8px;
+}
+figure.fig-wide .fig-id {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 12px; color: var(--accent); font-weight: 600; letter-spacing: 0.05em;
+}
+figure.fig-wide img { width: 100%; display: block; background: #0B1220; }
+figure.fig-wide figcaption {
+  padding: 14px 20px; font-size: 13.5px; color: var(--text-soft);
+  border-top: 1px solid var(--border); line-height: 1.55;
+}
+
+.kpi-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px; margin: 28px 0;
+}
+.kpi {
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: 6px; padding: 18px 20px;
+}
+.kpi .kpi-label {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 10px; letter-spacing: 0.14em; color: var(--subtext);
+  text-transform: uppercase; margin-bottom: 8px;
+}
+.kpi .kpi-value {
+  font-size: 26px; font-weight: 700; color: var(--text);
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  letter-spacing: -0.01em;
+}
+.kpi .kpi-value .unit { font-size: 14px; color: var(--subtext); font-weight: 400; margin-left: 4px; }
+.kpi .kpi-sub { font-size: 12px; color: var(--subtext); margin-top: 4px; }
+.kpi.accent  { border-left: 3px solid var(--accent); }
+.kpi.warn    { border-left: 3px solid var(--warn); }
+.kpi.danger  { border-left: 3px solid var(--danger); }
+.kpi.arg     { border-left: 3px solid var(--arg); }
+.kpi.fra     { border-left: 3px solid var(--fra); }
+
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 28px 0; }
+@media (max-width: 760px) { .two-col { grid-template-columns: 1fr; } }
+
+.gk-compare {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+  margin: 28px 0; border: 1px solid var(--border);
+  border-radius: 6px; overflow: hidden;
+}
+@media (max-width: 760px) { .gk-compare { grid-template-columns: 1fr; } }
+.gk-compare .gk-col { padding: 24px; background: var(--panel); }
+.gk-compare .gk-col + .gk-col { border-left: 1px solid var(--border); }
+@media (max-width: 760px) {
+  .gk-compare .gk-col + .gk-col {
+    border-left: none; border-top: 1px solid var(--border);
+  }
+}
+.gk-compare .gk-name { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+.gk-compare .gk-team {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+  margin-bottom: 18px;
+}
+.gk-compare .gk-col.arg .gk-team { color: var(--arg); }
+.gk-compare .gk-col.fra .gk-team { color: var(--fra); }
+.gk-compare .gk-attr {
+  display: flex; justify-content: space-between;
+  padding: 8px 0; border-bottom: 1px dashed var(--border);
+  font-size: 13.5px;
+}
+.gk-compare .gk-attr:last-child { border-bottom: none; }
+.gk-compare .gk-attr .k { color: var(--subtext); }
+.gk-compare .gk-attr .v {
+  color: var(--text);
+  font-family: 'JetBrains Mono', 'Fira Code', monospace; font-weight: 600;
+}
+
+.timeline { position: relative; margin: 32px 0; padding-left: 24px; }
+.timeline::before {
+  content: ""; position: absolute; left: 7px; top: 4px; bottom: 4px;
+  width: 2px; background: var(--border-2);
+}
+.timeline .tl-item { position: relative; padding: 0 0 22px 28px; }
+.timeline .tl-item::before {
+  content: ""; position: absolute; left: -22px; top: 6px;
+  width: 12px; height: 12px; border-radius: 50%;
+  background: var(--bg); border: 2px solid var(--accent);
+}
+.timeline .tl-item.warn::before    { border-color: var(--warn); }
+.timeline .tl-item.danger::before  { border-color: var(--danger); }
+.timeline .tl-item.arg::before     { border-color: var(--arg); }
+.timeline .tl-item.fra::before     { border-color: var(--fra); }
+.timeline .tl-minute {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 12px; color: var(--accent); font-weight: 600;
+  letter-spacing: 0.05em; margin-bottom: 4px;
+}
+.timeline .tl-item.warn .tl-minute   { color: var(--warn); }
+.timeline .tl-item.danger .tl-minute { color: var(--danger); }
+.timeline .tl-item.arg .tl-minute    { color: var(--arg); }
+.timeline .tl-item.fra .tl-minute    { color: var(--fra); }
+.timeline .tl-text { font-size: 14px; color: var(--text-soft); line-height: 1.55; }
+.timeline .tl-text strong { color: var(--text); }
+
+footer.report-footer {
+  padding: 48px 0 64px; background: var(--panel);
+  border-top: 1px solid var(--border); margin-top: 80px;
+}
+footer.report-footer .container {
+  display: flex; justify-content: space-between; align-items: center;
+  flex-wrap: wrap; gap: 16px;
+}
+footer.report-footer .footer-meta {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 11px; color: var(--muted); letter-spacing: 0.08em;
+}
+footer.report-footer .footer-brand { font-size: 13px; color: var(--text-soft); font-weight: 600; }
+footer.report-footer .footer-brand .accent { color: var(--accent); }
+
+@media print {
+  .cover { min-height: auto; page-break-after: always; }
+  .toc { page-break-after: always; }
+  section { page-break-inside: avoid; }
+  body { background: white; color: black; }
+}
+@media (max-width: 760px) {
+  .container { padding: 0 20px; }
+  .cover { padding: 40px 24px 32px; }
+  .cover-title { font-size: 36px; }
+  .cover-subtitle { font-size: 17px; }
+  .cover-meta { grid-template-columns: 1fr 1fr; gap: 16px; }
+  .toc { padding: 48px 24px; }
+  .toc-title { font-size: 26px; }
+  h2.section-title { font-size: 24px; }
+  h3 { font-size: 18px; }
+  section { padding: 48px 0 40px; }
+  .kpi-grid { grid-template-columns: 1fr 1fr; }
+}
+
+  </style>
+</head>
+<body>
+
+
+<div class="cover">
+  <div class="cover-top">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <div class="cover-badge">Football Data Analysis Mentorship By Sara Bentelli</div>
+      
+      <a href="https://www.linkedin.com/in/sara-bentelli-90a02516b/" target="_blank" title="Sara Bentelli's LinkedIn" style="display: inline-flex; align-items: center; text-decoration: none;">
+        <svg width="20" height="20" viewBox="0 0 24 24" style="vertical-align: middle;">
+          <rect width="24" height="24" rx="4" fill="#0A66C2"/>
+          <path d="M19 19h-3v-4.74c0-1.42-.6-1.93-1.38-1.93-.94 0-1.37.64-1.37 1.93V19h-3V10h3v1.33c.43-.65 1.28-1.08 2.38-1.08 1.83 0 3.37 1.15 3.37 3.84V19zM7 8.5C5.9 8.5 5 7.6 5 6.5S5.9 4.5 7 4.5s2 .9 2 2-.9 2-2 2zM5.5 19h3V10h-3v9z" fill="#FFFFFF"/>
+        </svg>
+      </a>
+    </div>
+
+    <div class="cover-classification">
+      <div style="display: flex; align-items: center; gap: 8px; font-size: 1.05em;">
+        Author: <span class="level">Amirhossein Moghimzadeh</span>
+        <a href="https://www.linkedin.com/in/amirhossein-moghimzadeh/" target="_blank" title="Author's LinkedIn" style="display: inline-flex; align-items: center; text-decoration: none;">
+          <svg width="20" height="20" viewBox="0 0 24 24" style="vertical-align: middle;">
+            <rect width="24" height="24" rx="4" fill="#0A66C2"/>
+            <path d="M19 19h-3v-4.74c0-1.42-.6-1.93-1.38-1.93-.94 0-1.37.64-1.37 1.93V19h-3V10h3v1.33c.43-.65 1.28-1.08 2.38-1.08 1.83 0 3.37 1.15 3.37 3.84V19zM7 8.5C5.9 8.5 5 7.6 5 6.5S5.9 4.5 7 4.5s2 .9 2 2-.9 2-2 2zM5.5 19h3V10h-3v9z" fill="#FFFFFF"/>
+          </svg>
+        </a>
+      </div>
+
+      <div style="margin-top: 10px;">
+        <a href="https://github.com/AHMoghimzadeh/shot_freeze_frame_analysis" target="_blank" style="display: inline-flex; align-items: center; gap: 8px; text-decoration: none; color: #cbd5e0; font-size: 0.95em; font-weight: 500; transition: color 0.2s;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+          <span>GitHub Project Repository</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="cover-center">
+    <div class="cover-eyebrow">FIFA World Cup 2022 &middot; Final</div>
+    <h1 class="cover-title">Shot Freeze Frame Analysis</h1>
+
+    <style>
+    .cover-flags {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 12px;
+    }
+
+    .flag-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .team-logo {
+      width: 100px;
+      height: 100px;
+      object-fit: cover;
+      border-radius: 1px;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+  </style>
+  <div class="cover-flags">
+    <div class="flag-pill arg">
+      <img class="team-logo" src="pics/logo/argentina_argentina-national-team_3000x3000.football-logos.cc.png"><span>Argentina</span> 
+      <span class="score">3 (4)</span>
+    </div>
+
+    <span class="cover-vs">&mdash; vs &mdash;</span>
+
+    <div class="flag-pill fra">
+      <img class="team-logo" src="pics/logo/france_france-national-team_3000x3000.football-logos.cc.png"><span>France</span> 
+      <span class="score">3 (2)</span>
+    </div>
+  </div>
+  </div>
+
+  <div>
+    <div class="cover-meta">
+      <div class="cover-meta-item">
+        <div class="label">Match Date</div>
+        <div class="value">18 December 2022</div>
+      </div>
+      <div class="cover-meta-item">
+        <div class="label">Venue</div>
+        <div class="value">Lusail Stadium &middot; Qatar</div>
+      </div>
+      <div class="cover-meta-item">
+        <div class="label">Data Source</div>
+        <div class="value">StatsBomb Open Data</div>
+      </div>
+      <div class="cover-meta-item">
+        <div class="label">Data Types</div>
+        <div class="value">Event Data | Freeze Frame Data</div>
+      </div>
+      <div class="cover-meta-item">
+        <div class="label">Competition ID</div>
+        <div class="value">43</div>
+      </div>
+      <div class="cover-meta-item">
+        <div class="label">Season ID</div>
+        <div class="value">106</div>
+      </div>
+      <div class="cover-meta-item">
+        <div class="label">Match ID</div>
+        <div class="value">3869685</div>
+      </div>
+      <div class="cover-meta-item">
+        <div class="label">Shots Analyzed</div>
+        <div class="value">8 (of 27 total)</div>
+      </div>
+      <div class="cover-meta-item">
+        <div class="label">Report Date</div>
+        <div class="value">2026-08-07</div>
+      </div>
+    </div>
+    <div class="cover-footer">
+    </div>
+  </div>
+</div>
+
+
+
+<div class="toc">
+  <h2 class="toc-title">Table of Contents</h2>
+  <ol class="toc-list">
+    <li>
+      <a href="#sec-1">
+        <span class="toc-text">Executive Summary &amp; Match Context
+          <span class="toc-sub">Overview</span>
+        </span>
+        <span class="toc-page">section 01</span>
+      </a>
+    </li>
+    <li>
+      <a href="#sec-2">
+        <span class="toc-text">Feature Extraction
+          <span class="toc-sub">Distance Formula &middot; Shot Cone formula &middot; Structured Shot Table</span>
+        </span>
+        <span class="toc-page">section 02</span>
+      </a>
+    </li>
+    <li>
+      <a href="#sec-3">
+        <span class="toc-text">Shot Analysis
+          <span class="toc-sub">Shot map &middot; Lautaro Effect &middot; French Resurgence</span>
+        </span>
+        <span class="toc-page">section 03</span>
+      </a>
+    </li>
+    <li>
+      <a href="#sec-4">
+        <span class="toc-text">Goalkeeper Performance Analysis
+          <span class="toc-sub">Lloris vs E. Mart&iacute;nez</span>
+        </span>
+        <span class="toc-page">section 04</span>
+      </a>
+    </li>
+    <li>
+      <a href="#sec-5">
+        <span class="toc-text">Strategic Takeaways &amp; Tactical Recommendations
+          <span class="toc-sub">3 Tactical Findings</span>
+        </span>
+        <span class="toc-page">section 05</span>
+      </a>
+    </li>
+    <li>
+      <a href="#sec-6">
+        <span class="toc-text">Appendix &mdash; Limitations of Standard xG Models
+          <span class="toc-sub">The Need for Contextual Metrics</span>
+        </span>
+        <span class="toc-page">section 06</span>
+      </a>
+    </li>
+  </ol>
+</div>
+
+
+<main>
+
+
+<section id="sec-1">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-eyebrow"><span class="num">section 01</span> Executive Summary</div>
+      <h2 class="section-title">Executive Summary &amp; Match Context</h2>
+    </div>
+
+<div class="kpi-grid">
+  <div class="kpi accent">
+    <div class="kpi-label">Final Score</div>
+    <div class="kpi-value">3 &mdash; 3</div>
+    <div class="kpi-sub">Argentina win 4-2 on penalties</div>
+  </div>
+
+  <div class="kpi arg">
+    <div class="kpi-label">Argentina Shots</div>
+    <div class="kpi-value">20</div>
+    <div class="kpi-sub">10 on target &middot; 3 goals</div>
+  </div>
+
+  <div class="kpi fra">
+    <div class="kpi-label">France Shots</div>
+    <div class="kpi-value">10</div>
+    <div class="kpi-sub">5 on target &middot; 3 goals</div>
+  </div>
+
+  <div class="kpi warn">
+    <div class="kpi-label">Shots Analyzed</div>
+    <div class="kpi-value">8</div>
+    <div class="kpi-sub">5 Argentina &middot; 3 France</div>
+  </div>
+
+  <div class="kpi accent">
+    <div class="kpi-label">Highest xG Shot</div>
+    <div class="kpi-value">0.488</div>
+    <div class="kpi-sub">Messi 107' rebound goal</div>
+  </div>
+
+  <div class="kpi arg">
+    <div class="kpi-label">Argentina xG</div>
+    <div class="kpi-value">2.76</div>
+    <div class="kpi-sub">1.98 Open Play &middot; 0.78 Penalty</div>
+  </div>
+
+  <div class="kpi fra">
+    <div class="kpi-label">France xG</div>
+    <div class="kpi-value">2.25</div>
+    <div class="kpi-sub">0.69 Open Play &middot; 1.56 Penalty</div>
+  </div>
+</div>
+
+    <h3><span class="h3-tag">1.1</span> Tactical Context</h3>
+    <p>The 2022 FIFA World Cup Final between <strong>Argentina</strong> and <strong>France</strong> at Lusail Stadium was a tactical chess match that oscillated between extremes: a suffocating Argentine first-half dominance, a French resurgence built on direct transition, and an extra-time period defined by chaos, fatigue, and individual brilliance. Argentina built a 2-0 lead inside 36 minutes through a sustained pressing structure that starved France of any controlled possession &mdash; Didier Deschamps' side failed to register a single shot for the opening 67 minutes, a remarkable statistic for a forward line featuring Kylian Mbapp&eacute;, Antoine Griezmann, and Olivier Giroud. The introduction of direct runners like Kingsley Coman, Randal Kolo Muani and Marcus Thuram in the second half inverted the dynamic, exposing Argentina's defensive line and producing three French goals from open sequences that each featured a completely unobstructed shot lane.</p>
+
+    <p>The match therefore functions as an ideal case study for <strong>Freeze Frame analysis</strong>: it contrasts two distinct attacking philosophies (sustained central circulation vs. direct transition) and two opposing defensive failures (France's over-committed low block vs. Argentina's late-game structural collapse). The eight shots selected for deep analysis in this report were chosen because they collectively represent every consequential turning point in the match &mdash; each goal, each goal-saving intervention, and each blocked opportunity that influenced the final outcome. Together, they reveal the gap between what traditional <strong>Expected Goals (xG)</strong> models measure and what actually happened on the pitch, demonstrating why context-aware spatial analysis must complement raw probabilistic outputs.</p>
+
+    <h3><span class="h3-tag">1.2</span> Methodology &mdash; Freeze Frame Mechanics</h3>
+    <p>StatsBomb <strong>Freeze Frame</strong> data captures the static spatial configuration of all players at the precise moment each shot was taken. For every shot event, the freeze frame returns one row per player on the pitch, containing that player's <span class="math-inline">(x, y)</span> coordinate, team affiliation, position name, and player identity. This is materially richer than the shot event alone, which only records the shooter's location, body part, technique, and outcome. By joining the freeze frame to the event stream, we recover the full defensive geometry surrounding each shot.</p>
+
+  </div>
+</section>
+
+
+
+<section id="sec-2">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-eyebrow"><span class="num">section 02</span> Feature Engineering</div>
+      <h2 class="section-title">Feature Extraction</h2>
+      <p class="section-deck">Extract <strong>Distance to Goalkeeper</strong> and <strong>Is in Shot Triangle</strong> Features.</p>
+    </div>
+
+<!-- ============================================================================= -->
+<!-- SECTION 2.1: Goalkeeper-to-Shooter Distance -->
+<!-- ============================================================================= -->
+<h3><span class="h3-tag">2.1</span> Goalkeeper-to-Shooter Distance &mdash; Mathematical Formulation</h3>
+
+<p>
+  The foundational derived metric in this report is the Euclidean distance between the shooter and the opposing goalkeeper at the moment the shot was taken. Treating the pitch as a two-dimensional Cartesian plane with the StatsBomb coordinate convention, this distance is computed directly from the shooter's coordinates <span class="math-inline">(x&#8321;, y&#8321;)</span> and the goalkeeper's coordinates <span class="math-inline">(x&#8322;, y&#8322;)</span>:
+</p>
+
+<div class="math-display">
+  <span class="math-label">// Goalkeeper-to-Shooter Distance</span>
+  <span class="eq">d<span style="font-style:normal">(shooter, GK)</span> = </span>
+  <span class="sqrt">
+    (x<sub>2</sub> &minus; x<sub>1</sub>)<sup>2</sup> + (y<sub>2</sub> &minus; y<sub>1</sub>)<sup>2</sup>
+  </span>
+</div>
+
+<p>
+  Here, <span class="math-inline">d</span> is expressed in the same pitch units as the input coordinates (one unit &asymp; 1 meter, given that a standard pitch maps to 120 &times; 80 units). The metric is directionally interpretable: a low <code>goalkeeper_distance</code> signals that the goalkeeper had already closed the angle and was effectively on top of the shooter, whereas a high distance indicates the keeper was anchored to his goal line, leaving a larger shooting target but also a longer reaction window.
+</p>
+
+<div class="callout">
+  <div class="callout-title">// Why This Metric Matters</div>
+  <div class="callout-body">
+    Goalkeeper distance is a leading indicator of <strong>angle-narrowing geometry</strong>. Elite goalkeepers like Emiliano Mart&iacute;nez proactively reduce this distance through aggressive off-line positioning, trading goal-area coverage for shot-angle compression. Conversely, line-set keepers accept a larger distance in exchange for lateral agility. The metric therefore encodes not just shot difficulty, but the <strong>goalkeeper's stylistic posture</strong> on that specific shot.
+  </div>
+</div>
+
+
+<!-- ============================================================================= -->
+<!-- SECTION 2.4: Shot-Lane Geometry & Defender Cone Analysis -->
+<!-- ============================================================================= -->
+<h3><span class="h3-tag">2.2</span> Shot-Lane &amp; Defender Cone Analysis</h3>
+
+<p>
+  To quantify defensive obstruction, we mathematically model the <strong>Shot Cone</strong> as a two-dimensional triangular region &Delta;V<sub>1</sub>V<sub>2</sub>V<sub>3</sub> extending from the shooter’s position V<sub>1</sub> = (x<sub>1</sub>, y<sub>1</sub>) to the two standard StatsBomb goalpost positions: V<sub>2</sub> = (120, 36.0) and V<sub>3</sub> = (120, 44.0). Any opposing outfield defender positioned at P<sub>i</sub> = (x<sub>i</sub>, y<sub>i</sub>) within this spatial boundary at the frame of the shot is classified as an active blocker in the direct line of fire.
+</p>
+
+<div class="math-display">
+  <span class="math-label">// Barycentric Shot-Cone Condition</span>
+  <span class="eq">P<sub>i</sub>(x, y) &isin; &Delta;V<sub>1</sub>V<sub>2</sub>V<sub>3</sub> &rArr; </span>
+  <span class="sqrt">
+    &lambda;<sub>1</sub> &ge; 0, &nbsp; &lambda;<sub>2</sub> &ge; 0, &nbsp; &lambda;<sub>3</sub> &ge; 0
+    &nbsp;&nbsp; where &nbsp;&nbsp;
+    &sum; &lambda;<sub>k</sub> = 1
+  </span>
+</div>
+
+<p>
+  The scalar weights &lambda;<sub>1</sub>, &lambda;<sub>2</sub>, &lambda;<sub>3</sub> are computed using deterministic vector cross-products (determinants of the sub-triangles). The metric aggregates every opposing player into a discrete density sum:
+</p>
+
+<div class="math-display">
+  <span class="math-label">// Defenders in Lane Count</span>
+  <span class="eq">defenders_in_cone = </span>
+  <span class="sqrt">
+    &sum;<sub>i=1</sub><sup>N<sub>opp</sub></sup> 
+    I&lpar;P<sub>i</sub> &isin; Cone&rpar;
+  </span>
+</div>
+
+<p>
+  Here, <code>I(&middot;)</code> represents an indicator function returning 1 if the defender lies strictly inside or on the boundaries of the shooting triangle, and 0 otherwise.
+</p>
+
+<div class="callout">
+  <div class="callout-title">// Why This Metric Matters</div>
+  <div class="callout-body">
+    Unobstructed shots (where <code>defenders_in_cone == 0</code>) establish a direct, high-velocity target lane toward the goalmouth, leaving the goalkeeper as the single line of defense. Conversely, when <code>defenders_in_cone &ge; 1</code>, the geometric corridor is constricted. This forces the shooter to alter the ball's natural trajectory—requiring additional elevation or a pronounced curl—or risk an immediate block at point-blank range. This metric captures the physical density of the defensive block far more accurately than raw spatial proximity metrics.
+  </div>
+</div>
+
+    <h3><span class="h3-tag">2.3</span> Structured Shot Data Table</h3>
+    <p>The table below consolidates the eight freeze-frame-analyzed shots into a single analyst-ready artifact. Each row corresponds to one shot, identified by a stable shot ID (<code>S1</code>&ndash;<code>S8</code>) used consistently throughout the remainder of this report.</p>
+
+    
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Team</th>
+        <th class="num">Min</th>
+        <th>Phase</th>
+        <th>Shooter</th>
+        <th>Shooter (x₁, y₁)</th>
+        <th>Goalkeeper (x₂, y₂)</th>
+        <th class="num">GK Distance</th>
+        <th class="num">xG</th>
+        <th>Outcome</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><strong>S1</strong></td>
+          <td><span class="pill fra">FRA</span></td>
+          <td class="num">80'</td>
+          <td>2H</td>
+          <td>Kylian Mbappé</td>
+          <td class="num">(104.8, 30.1)</td>
+          <td class="num">(117.7, 37.9)</td>
+          <td class="num"><strong>15.07</strong></td>
+          <td class="num">0.102</td>
+          <td><span class="pill goal">Goal</span></td>
+        </tr>
+        <tr>
+          <td><strong>S2</strong></td>
+          <td><span class="pill fra">FRA</span></td>
+          <td class="num">93'</td>
+          <td>2H+ET</td>
+          <td>Adrien Rabiot</td>
+          <td class="num">(108.9, 28.5)</td>
+          <td class="num">(118.3, 36.4)</td>
+          <td class="num"><strong>12.28</strong></td>
+          <td class="num">0.093</td>
+          <td><span class="pill saved">Saved</span></td>
+        </tr>
+        <tr>
+          <td><strong>S3</strong></td>
+          <td><span class="pill fra">FRA</span></td>
+          <td class="num">122'</td>
+          <td>ET2</td>
+          <td>Randal Kolo Muani</td>
+          <td class="num">(103.7, 45.1)</td>
+          <td class="num">(109.7, 43.5)</td>
+          <td class="num"><strong>6.21</strong></td>
+          <td class="num">0.278</td>
+          <td><span class="pill saved">Saved</span></td>
+        </tr>
+        <tr>
+          <td><strong>S4</strong></td>
+          <td><span class="pill arg">ARG</span></td>
+          <td class="num">96'</td>
+          <td>2H+ET</td>
+          <td>Lionel Messi</td>
+          <td class="num">(96.2, 40.9)</td>
+          <td class="num">(117.6, 39.9)</td>
+          <td class="num"><strong>21.42</strong></td>
+          <td class="num">0.043</td>
+          <td><span class="pill saved">Saved</span></td>
+        </tr>
+        <tr>
+          <td><strong>S5</strong></td>
+          <td><span class="pill arg">ARG</span></td>
+          <td class="num">104'</td>
+          <td>ET1</td>
+          <td>Lautaro Martínez</td>
+          <td class="num">(108.8, 45.3)</td>
+          <td class="num">(116.7, 42.2)</td>
+          <td class="num"><strong>8.49</strong></td>
+          <td class="num">0.233</td>
+          <td><span class="pill blocked">Blocked</span></td>
+        </tr>
+        <tr>
+          <td><strong>S6</strong></td>
+          <td><span class="pill arg">ARG</span></td>
+          <td class="num">105'</td>
+          <td>ET1</td>
+          <td>Lautaro Martínez</td>
+          <td class="num">(105.1, 33.5)</td>
+          <td class="num">(109.0, 35.1)</td>
+          <td class="num"><strong>4.22</strong></td>
+          <td class="num">0.140</td>
+          <td><span class="pill offt">Off T</span></td>
+        </tr>
+        <tr>
+          <td><strong>S7</strong></td>
+          <td><span class="pill arg">ARG</span></td>
+          <td class="num">107'</td>
+          <td>ET2</td>
+          <td>Lionel Messi</td>
+          <td class="num">(116.6, 43.0)</td>
+          <td class="num">(118.3, 43.7)</td>
+          <td class="num"><strong>1.84</strong></td>
+          <td class="num">0.488</td>
+          <td><span class="pill goal">Goal</span></td>
+        </tr>
+        <tr>
+          <td><strong>S8</strong></td>
+          <td><span class="pill arg">ARG</span></td>
+          <td class="num">122'</td>
+          <td>ET2</td>
+          <td>Lautaro Martínez</td>
+          <td class="num">(110.8, 41.6)</td>
+          <td class="num">(118.1, 42.4)</td>
+          <td class="num"><strong>7.34</strong></td>
+          <td class="num">0.107</td>
+          <td><span class="pill offt">Off T</span></td>
+        </tr>
+    </tbody>
+  </table>
+</div>
+
+
+    <p>Three observations are immediately evident from the table. First, the highest-xG shot in the match &mdash; Messi's 107' rebound goal at <strong>xG = 0.488</strong> &mdash; was also the shot with the smallest goalkeeper distance (1.84 meters), reflecting a near-open-goal scenario. Second, Lautaro Mart&iacute;nez's three extra-time shots (S5, S6, S8) all featured goalkeepers less than 9 meters away, indicating the keeper was actively engaging him rather than passively positioned. Third, Messi's 96' long-range strike (S4) had the largest goalkeeper distance (21.42 meters) &mdash; a classic line-set scenario where the keeper prioritized reaction time over angle-narrowing.</p>
+
+  </div>
+</section>
+
+
+
+<section id="sec-3">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-eyebrow"><span class="num">section 03</span> Shot Analysis</div>
+      <h2 class="section-title">Shot Analysis</h2>
+      <p class="section-deck">A geometric dissection of the defensive block, shot lanes, and shooter pressure windows across the eight freeze-frame-analyzed shots.</p>
+    </div>
+
+    <h3><span class="h3-tag">3.1</span> The Lautaro Effect &mdash; Breaking the French Low Block</h3>
+    <p>During the first 90 minutes of the final, Argentina's inside-the-box shooting opportunities were heavily congested. Aside from &Aacute;ngel Di Mar&iacute;a's counter-attacking goal, almost every shot taken by Argentina inside the French penalty area faced immediate opposition, with at least one defender successfully positioning themselves directly in the <strong>Shot Lane</strong>. The introduction of <strong>Lautaro Mart&iacute;nez</strong> in the 102nd minute fundamentally altered this dynamic. Across his four shooting opportunities (S5 at 104', S6 at 105', an indirect involvement in Messi's 107' goal S7, and S8 at 122'), he managed to isolate himself from defensive cover &mdash; meaning <strong>no defender was blocking his direct line of sight to the goal</strong> at the moment of the shot. The single exception was a last-second desperation tackle by Dayot Upamecano on S5.</p>
+
+    <h4>Decomposing the Tactic: Three Mechanisms</h4>
+    <p>Three distinct spatial mechanisms underpinned Mart&iacute;nez's disruptive effect. First, he operated on the <strong>shoulders of the last defenders</strong> rather than engaging them frontally &mdash; unlike Juli&aacute;n &Aacute;lvarez, whose direct central runs were visible to France's center-backs (Varane and Upamecano) and therefore easy to track. By hiding in defenders' blind spots, Mart&iacute;nez forced a fatigued French backline to constantly drop deeper and turn their hips, generating separation in the process. Second, he acted as a <strong>physically imposing modern No. 9</strong>, pinning France's central defenders deep into their own six-yard box and opening secondary lanes for rebounds. Third, he demonstrated superior <strong>anticipation of second-ball trajectories</strong>, drifting into dead spaces right as rebounds occurred and triggering shots before the French block could shift body weight to cover.</p>
+
+    
+<figure class="shot-fig">
+  <div class="fig-header">
+    <span class="fig-id">Figure 2 · Shot S5</span>
+    <span class="fig-meta">
+      <span class="pill arg">Argentina</span>
+      <span class="sep">·</span>
+      <span>Lautaro Mart&iacute;nez</span>
+      <span class="sep">·</span>
+      <span>104' (ET1)</span>
+      <span class="sep">·</span>
+      <span class="pill blocked">Blocked</span>
+    </span>
+  </div>
+  <img src="shots/argentina_shots/non_goal_shots/3_104_Lautaro Javier Martínez_Blocked.png">
+  <img src="shots/argentina_shots/non_goal_shots/3_104_Lautaro Javier Martínez_Blocked_Game_Picture.png" alt="">
+    <strong>Shot S5 &mdash; The Last-Second Block.</strong> A quick combination finds Mart&iacute;nez inside the box, having broken away from his marker. The French block is structurally bypassed and the shot lane is open &mdash; only an extraordinary, maximum-effort sliding tackle by Dayot Upamecano blocks the ball at the last microsecond. Note the deep GK position (Hugo Lloris at 116.7, 42.2) leaving a clear central channel.
+
+  </figcaption>
+</figure>
+
+
+    <p>The freeze frame for S5 (Figure 2) crystallizes the first mechanism. Mart&iacute;nez receives at <code>(108.8, 45.3)</code> &mdash; central, inside the penalty area, with his back to goal. The French back four is structured but flat-footed: Upamecano and Varane are positioned goal-side but slightly behind the shooter, having lost the half-second required to engage. The shot lane to the bottom-right corner is completely open; only Upamecano's extraordinary recovery tackle, executed at full stretch, prevents a near-certain goal. The xG of 0.233 understates the danger because the model does not account for the lane being clear at the moment of strike.</p>
+
+    
+<figure class="shot-fig">
+  <div class="fig-header">
+    <span class="fig-id">Figure 3 · Shot S6</span>
+    <span class="fig-meta">
+      <span class="pill arg">Argentina</span>
+      <span class="sep">·</span>
+      <span>Lautaro Mart&iacute;nez</span>
+      <span class="sep">·</span>
+      <span>105' (ET1)</span>
+      <span class="sep">·</span>
+      <span class="pill offt">Off T</span>
+    </span>
+  </div>
+  <img src="shots/argentina_shots/non_goal_shots/3_105_Lautaro Javier Martínez_Off T.png">
+  <img src="shots/argentina_shots/non_goal_shots/3_105_Lautaro Javier Martínez_Off T_Game_Picture.png">
+
+  <figcaption>
+    <strong>Shot S6 &mdash; The 1v1 Breakdown.</strong> Following a swift penetration, the ball drops into space, putting Mart&iacute;nez through on goal in a 1v1 scenario against Hugo Lloris at a close goalkeeper distance of just 4.22 meters. A French defender makes a desperate recovery run to close him down, but fails to reach him in time to block the shooting corridor. With a completely unobstructed line of fire to the net, Mart&iacute;nez drags his left-footed strike wide of the post, squandering a high-value opportunity.    <div class="fig-stats">
+    </div>
+  </figcaption>
+</figure>
+
+
+    <p>S6 (Figure 3) illustrates the second mechanism — elite spatial anticipation and quick reaction into pockets of space. Just 60 seconds after S5, the ball drops into space at (105.1, 33.5), putting Martínez through in a direct 1v1 scenario against Hugo Lloris. Lloris aggressively narrows the distance to just 4.22 meters. While a French defender makes a desperate recovery run to challenge him, he fails to close him down in time or intercept the shooting corridor. Consequently, the direct line of fire to the net remains completely clear.</p>
+
+    
+<figure class="shot-fig">
+  <div class="fig-header">
+    <span class="fig-id">Figure 4 · Shot S8</span>
+    <span class="fig-meta">
+      <span class="pill arg">Argentina</span>
+      <span class="sep">·</span>
+      <span>Lautaro Mart&iacute;nez</span>
+      <span class="sep">·</span>
+      <span>122' (ET2)</span>
+      <span class="sep">·</span>
+      <span class="pill offt">Off T</span>
+    </span>
+  </div>
+  <img src="shots/argentina_shots/non_goal_shots/4_122_Lautaro Javier Martínez_Off T.png">
+  <img src="shots/argentina_shots/non_goal_shots/4_122_Lautaro Javier Martínez_Off T_Game_Picture.png">
+  
+  <figcaption>
+    <strong>Shot S8 &mdash; The Final Header.</strong> In the dying seconds of extra time, a cross from Leandro Paredes finds Mart&iacute;nez completely unmarked between France's center-backs. The French defensive line fails to track his lateral movement; he gets a free header from point-blank range but misdirects it wide. Note Lloris is anchored to his line &mdash; had the header been on target, his reaction window would have been negligible.
+    <div class="fig-stats">
+    </div>
+  </figcaption>
+</figure>
+
+
+    <p>S8 (Figure 4), in the 122nd minute, shows the third mechanism &mdash; lateral movement against a fatigued defensive line. A cross from Leandro Paredes finds Mart&iacute;nez completely unmarked between the center-backs. The French defensive line has failed to track his lateral shuffle, and Lloris is anchored to his line, surrendering a 7.34-meter reaction window. The header is misdirected wide, but the spatial setup &mdash; free header, central, six-yard box, no blocker &mdash; is a good opportunity a striker can header the ball at the back of the net.</p>
+
+    <h3><span class="h3-tag">3.2</span> Conclusion</h3>
+    <p>
+      When analyzing StatsBomb Freeze Frames, just focusing on number of goals might underrepresent Mart&iacute;nez’s actual impact due to his poor finishing execution in this specific match. However, integrating Shot Lane Analysis reveals that Lautaro Mart&iacute;nez was the tactical key that unlocked France's heavily congested defense. His introduction transformed Argentina's attack from a low-efficiency shooting side into a high-danger threat capable of generating unobstructed, high-value opportunities inside the box.
+    </p>
+
+    <h3><span class="h3-tag">3.3</span> The French Resurgence &mdash; Transition Against a Broken Block</h3>
+    <p>For the first 67 minutes of the final, Argentina delivered a tactical masterclass in defensive prevention, completely suffocating the French attack and preventing them from registering a single shot. Argentina's midfield trio aggressively pressed Griezmann, cutting off the passing lanes that fed France's front line. Their defensive freeze frames during this period show no desperate blocks because France was never allowed to enter the final third with controlled possession. Once Didier Deschamps introduced physical, direct runners &mdash; Coman and Kolo Muani &mdash; and shifted to a direct attacking style, Argentina's defensive line panicked, producing individual errors and completely open shooting windows.</p>
+
+    
+<figure class="shot-fig">
+  <div class="fig-header">
+    <span class="fig-id">Figure 5 · Shot S1</span>
+    <span class="fig-meta">
+      <span class="pill fra">France</span>
+      <span class="sep">·</span>
+      <span>Kylian Mbapp&eacute;</span>
+      <span class="sep">·</span>
+      <span>80' (2H)</span>
+      <span class="sep">·</span>
+      <span class="pill goal">Goal</span>
+    </span>
+  </div>
+  <img src="shots/france_shots/goal_shots/2_80_Kylian Mbappé Lottin_Goal.png">
+  <img src="shots/france_shots/goal_shots/2_80_Kylian Mbappé Lottin_Goal_Game_Picture.png">
+  <figcaption>
+    <strong>Shot S1 &mdash; Mbapp&eacute;'s Volley Equalizer.</strong> Marcus Thuram plays a quick overhead one-two combination with Mbapp&eacute; on the left edge of the penalty box. Argentina's defensive line is stretched and disconnected; the freeze frame reveals <strong>zero Argentine defenders occupying the shot lane</strong>. Mbapp&eacute; is given a completely clear window to execute a world-class volley into the far corner. Note Emiliano Mart&iacute;nez's line-set position that surrenders the far corner.
+    <div class="fig-stats">
+    </div>
+  </figcaption>
+</figure>
+
+
+    <p>S1 (Figure 5) is the canonical example. The freeze frame shows Mbapp&eacute; at <code>(104.8, 30.1)</code> &mdash; left edge of the penalty box, having received a Thuram one-two. Argentina's defensive line is stretched and disconnected: <strong>zero Argentine defenders occupy the shot lane</strong>. Emiliano Mart&iacute;nez is in a line-set stance at <code>(117.7, 37.9)</code>, 15.07 meters from the shooter &mdash; a textbook line-keeper position that prioritizes reaction time over angle compression. Mbapp&eacute; executes a synchronized volley into the far corner. The 0.102 xG dramatically understates the danger: this is, this is Mbapp&eacute; who can score these opportunities all day.</p>
+
+    
+<figure class="shot-fig">
+  <div class="fig-header">
+    <span class="fig-id">Figure 6 · Shot S2</span>
+    <span class="fig-meta">
+      <span class="pill fra">France</span>
+      <span class="sep">·</span>
+      <span>Adrien Rabiot</span>
+      <span class="sep">·</span>
+      <span>93' (2H+ET)</span>
+      <span class="sep">·</span>
+      <span class="pill saved">Saved</span>
+    </span>
+  </div>
+  <img src="shots/france_shots/non_goal_shots/2_93_Adrien Rabiot_Saved.png">
+  <img src="shots/france_shots/non_goal_shots/2_93_Adrien Rabiot_Saved_Game_Picture.png">
+
+  <figcaption>
+    <strong>Shot S2 &mdash; Rabiot's Stoppage-Time Drive.</strong> Deep into injury time, Rabiot finds himself free on the left side of the penalty area and unleashes a powerful low drive. Argentina's backline completely fails to close down the space; Rabiot enjoys a <strong>clear shot window</strong> with no outfield blocker in front of him. Emiliano Mart&iacute;nez executes a textbook positional save &mdash; staying set, narrowing the angle, parrying the strike and smothering the rebound.
+    <div class="fig-stats">
+    </div>
+  </figcaption>
+</figure>
+
+
+    <p>This is the second consecutive French shot with no outfield blocker in the lane. The defensive collapse is no longer an isolated incident; it is a systemic pattern that will recur again at 122' (S3, Kolo Muani's legendary 1v1 &mdash; analyzed in &sect;4 alongside the goalkeeper's intervention).</p>
+
+    <h3><span class="h3-tag">3.4</span> Defensive Compactness Metric &mdash; Per-Shot Summary</h3>
+    <p>Beyond the binary shot-lane measure, a continuous compactness proxy can be derived from each freeze frame: the ratio of opponents to teammates inside the shot frame. A high ratio indicates the shooter was operating in a congested pocket; a low ratio indicates isolation. The table below presents this metric for all eight shots.</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Shot ID</th>
+            <th>Shooter</th>
+            <th>Minute</th>
+            <th class="num">Teammates (5m)</th>
+            <th class="num">Opponents (5m)</th>
+            <th class="num">Opp/Team Ratio</th>
+            <th>Lane Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>S1</strong></td><td>Mbapp&eacute;</td><td class="num">80'</td><td class="num">3</td><td class="num">8</td><td class="num">2.67</td><td><span class="pill goal">CLEAR</span></td></tr>
+          <tr><td><strong>S2</strong></td><td>Rabiot</td><td class="num">93'</td><td class="num">8</td><td class="num">10</td><td class="num">1.25</td><td><span class="pill goal">CLEAR</span></td></tr>
+          <tr><td><strong>S3</strong></td><td>Kolo Muani</td><td class="num">122'</td><td class="num">3</td><td class="num">5</td><td class="num">1.67</td><td><span class="pill goal">CLEAR</span></td></tr>
+          <tr><td><strong>S4</strong></td><td>Messi</td><td class="num">96'</td><td class="num">5</td><td class="num">9</td><td class="num">1.80</td><td><span class="pill saved">Saved</span></td></tr>
+          <tr><td><strong>S5</strong></td><td>Lautaro</td><td class="num">104'</td><td class="num">3</td><td class="num">6</td><td class="num">2.00</td><td><span class="pill blocked">BLOCKED</span></td></tr>
+          <tr><td><strong>S6</strong></td><td>Lautaro</td><td class="num">105'</td><td class="num">1</td><td class="num">4</td><td class="num">4.00</td><td><span class="pill goal">CLEAR</span></td></tr>
+          <tr><td><strong>S7</strong></td><td>Messi</td><td class="num">107'</td><td class="num">3</td><td class="num">7</td><td class="num">2.33</td><td><span class="pill goal">CLEAR</span></td></tr>
+          <tr><td><strong>S8</strong></td><td>Lautaro</td><td class="num">122'</td><td class="num">3</td><td class="num">7</td><td class="num">2.33</td><td><span class="pill goal">CLEAR</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>The compactness metric reveals an interesting paradox. S6 (Lautaro 105') has the highest opponent-to-teammate ratio (4.00), suggesting high defensive congestion &mdash; yet the shot lane itself was completely clear, because the surrounding opponents were positioned wide rather than between shooter and goal. This highlights an important limitation: <strong>density in the frame is not the same as density in the shooting lane</strong>. The lane-status column, derived from visual inspection of the freeze frame, is the more reliable indicator of shot quality in this dataset. Six of eight shots had a clear lane &mdash; a remarkable figure that explains both teams generated high-quality chances.</p>
+
+
+  </div>
+</section>
+
+
+
+<section id="sec-4">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-eyebrow"><span class="num">section 04</span> Goalkeeper Dynamics</div>
+      <h2 class="section-title">Goalkeeper Positioning &amp; Shot-Stopping Dynamics</h2>
+      <p class="section-deck">An evaluation of Hugo Lloris and Emiliano Mart&iacute;nez performance on this game.</p>
+    </div>
+
+    <h3><span class="h3-tag">4.1</span> Two Goalkeeping Philosophies in Collision</h3>
+    <p>The freeze frame data highlights a fascinating contrast in how Hugo Lloris and Emiliano Mart&iacute;nez managed their penalty area &mdash; a contrast that reflects both their individual stylistic preferences and the defensive systems in front of them. <strong>Lloris</strong>, the traditional line-keeper, relied on his elite reflexes and generally preferred to stay on or near his goal line, trusting his lateral agility to cover the corners. <strong>Mart&iacute;nez</strong>, the proactive space-closer, played with immense aggression and frequently used proactive angle-narrowing to suffocate the striker's options. The two approaches produced materially different goalkeeper-distance distributions across the eight analyzed shots, and they explain why each keeper succeeded (or failed) on specific shot types.</p>
+
+    <div class="gk-compare">
+      <div class="gk-col arg">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 6px;">
+          <img src="pics/players_picture/Emiliano_Martinez.jpeg" alt="Emiliano Martínez" style="width: 80px; height: 100px; border-radius: 6px; object-fit: cover; border: 1px solid #718096; flex-shrink: 0;" />
+          <div class="gk-name" style="margin: 0;">Emiliano Mart&iacute;nez</div>
+        </div>
+        <div class="gk-team">// Argentina &middot; Proactive Space-Closer</div>
+        <div class="gk-attr"><span class="k">Shots faced</span><span class="v">8</span></div>
+        <div class="gk-attr"><span class="k">Mean GK distance</span><span class="v">15.83 meters</span></div>
+        <div class="gk-attr"><span class="k">Min / Max distance</span><span class="v">6.14 / 28.01</span></div>
+        <div class="gk-attr"><span class="k">Positional style</span><span class="v">Off-line, aggressive</span></div>
+        <div class="gk-attr"><span class="k">Goals conceded</span><span class="v">1 (Mbapp&eacute;)</span></div>
+        <div class="gk-attr"><span class="k">Saves</span><span class="v">2</span></div>
+        <div class="gk-attr"><span class="k">Save of the match</span><span class="v">S3 (122') &mdash; 1v1</span></div>
+      </div>
+
+      <div class="gk-col fra">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 6px;">
+          <img src="pics/players_picture/Hugo_Lloris.jpeg" alt="Hugo Lloris" style="width: 80px; height: 100px; border-radius: 6px; object-fit: cover; border: 1px solid #718096; flex-shrink: 0;" />
+          <div class="gk-name" style="margin: 0;">Hugo Lloris</div>
+        </div>
+        <div class="gk-team">// France &middot; Traditional Line-Keeper</div>
+        <div class="gk-attr"><span class="k">Shots faced</span><span class="v">19</span></div>
+        <div class="gk-attr"><span class="k">Mean GK distance</span><span class="v">15.87 meters</span></div>
+        <div class="gk-attr"><span class="k">Min / Max distance</span><span class="v">1.84 / 28.23</span></div>
+        <div class="gk-attr"><span class="k">Positional style</span><span class="v">Line-set, reflex-reliant</span></div>
+        <div class="gk-attr"><span class="k">Goals conceded</span><span class="v">2 (Messi - Di Mar&iacute;a)</span></div>
+        <div class="gk-attr"><span class="k">Saves</span><span class="v">7</span></div>
+        <div class="gk-attr"><span class="k">Save of the match</span><span class="v">S4 (96') &mdash; long-range</span></div>
+      </div>
+    </div>
+
+    <p>
+      The comparative data illustrates a striking tactical reality regarding defensive resilience and goalkeeper reliance. Following the late-game structural collapse of Argentina's mid-block, France’s defensive line actually succeeded in forcing lower-quality, volume-based attempts—allowing Hugo Lloris to rack up <strong>7 saves</strong> and absorb sustained threat.
+    </p>
+
+    <p>
+      Conversely, Argentina's total defensive collapse late in the match left Emiliano Mart&iacute;nez completely exposed, forcing him to face high-catastrophe 1v1 scenarios rather than routine shot volumes. While Mart&iacute;nez recorded only <strong>2 saves</strong> throughout the match, both were exceptional, high-stakes interventions under maximum spatial threat. Most notably, his aggressive off-line positioning and sweeping stance on Kolo Muani's 122' 1v1 (S3)—narrowing the distance down to 6.14 meters—produced the definitive, match-winning save that preserved the World Cup title for Argentina.
+    </p>
+    <h3><span class="h3-tag">4.2</span> Lloris Performance Analysis</h3>
+    <p>
+      Lloris's overall performance across the 120 minutes was solid and highly commendable despite conceding three goals. The first goal originated from a penalty kick, offering him virtually no positional recourse. On Di Mar&iacute;a's second-goal strike, Lloris executed a sharp, proactive advance off his line to narrow the angle; however, Di Mar&iacute;a's exquisite technique caused the ball to bounce awkwardly off the turf and loop over his body. Prior to Argentina's third goal, Lloris made a brilliant reflex save to deny a powerful point-blank strike from Lautaro Mart&iacute;nez, only for Messi to convert the secondary rebound. 
+    </p>
+    
+<figure class="shot-fig">
+  <div class="fig-header">
+    <span class="fig-id">Figure 7 · Shot S4</span>
+    <span class="fig-meta">
+      <span class="pill arg">Argentina</span>
+      <span class="sep">·</span>
+      <span>Lionel Messi</span>
+      <span class="sep">·</span>
+      <span>96' (2H+ET)</span>
+      <span class="sep">·</span>
+      <span class="pill saved">Saved</span>
+    </span>
+  </div>
+  <img src="shots/argentina_shots/non_goal_shots/2_96_Lionel Andrés Messi Cuccittini_Saved.png">
+  <img src="shots/argentina_shots/non_goal_shots/2_96_Lionel Andrés Messi Cuccittini_Saved_Game_Picture.png">
+  <figcaption>
+    <strong>Shot S4 &mdash; Messi's Unconventional Rocket.</strong> From just outside the D-radius, Messi unleashes a powerful strike through a screen of <strong>three French defenders positioned directly in the shot lane</strong>. The 0.043 xG marks this as low-probability, but the execution, velocity and dip turned it into one of the match's most dangerous moments. Lloris, with a 21.42-meters reaction window, is forced into a fingertip flying save to tip it over. A textbook case of low-xG / high-difficulty-for-the-keeper.
+    <div class="fig-stats">
+    </div>
+  </figcaption>
+</figure>
+
+
+    <p>But the same line-set tendency became a liability on Messi's 107' rebound goal (S7). After parrying Lautaro's initial shot, Lloris was grounded &mdash; horizontally neutralized on the grass and physically incapable of a reflex save. Messi'stap-in at 1.84 meter distance was conceptually trivial; the only obstacle was a single French defender on the goal line. The freeze frame (Figure 8) makes the paradox visible: Lloris is on the ground, but his positional coordinates are still nominally those of an active goalkeeper.</p>
+
+    
+<figure class="shot-fig">
+  <div class="fig-header">
+    <span class="fig-id">Figure 8 · Shot S7</span>
+    <span class="fig-meta">
+      <span class="pill arg">Argentina</span>
+      <span class="sep">·</span>
+      <span>Lionel Messi</span>
+      <span class="sep">·</span>
+      <span>107' (ET2)</span>
+      <span class="sep">·</span>
+      <span class="pill goal">Goal</span>
+    </span>
+  </div>
+  <img src="shots/argentina_shots/goal_shots/4_107_Lionel Andrés Messi Cuccittini_Goal.png">
+  <img src="shots/argentina_shots/goal_shots/4_107_Lionel Andrés Messi Cuccittini_Goal_Game_Picture.png">
+
+  <figcaption>
+    <strong>Shot S7 &mdash; Messi's Rebound Goal (the xG=0.49 Paradox).</strong> From the six-yard box, Messi converts the rebound after Lloris parries Lautaro Mart&iacute;nez's initial shot. Lloris is grounded and physically incapable of a reflex save; the only obstacle is a single French defender on the line. Despite being conceptually easier than a penalty, StatsBomb's xG model values this at only 0.488 &mdash; a structural blind spot explored in detail in section 6. The 1.84 meter goalkeeper distance is the shortest in the entire sample.
+    <div class="fig-stats">
+    </div>
+  </figcaption>
+</figure>
+
+
+    <div class="callout warn">
+      <div class="callout-title">// Goalkeeper State &mdash; The Missing Variable</div>
+      <div class="callout-body">Standard xG models treat the goalkeeper as a point in <span class="math-inline">(x, y)</span> space. They do not encode <strong>body posture</strong> (upright vs. grounded vs. mid-dive), <strong>weight distribution</strong> (set vs. moving), or <strong>visual sightline</strong> (clear vs. screened). Lloris's 1.84-,meters distance on S7 looks like an active goalkeeper closing the angle; in reality, he was horizontal on the turf. The model assumes this chance as non-goal; in context, the chance of goal was very high. This gap is one of the most important limitation of current xG practice &mdash; explored in detail in section 6.</div>
+    </div>
+
+    <h3><span class="h3-tag">4.3</span> Emiliano Mart&iacute;nez Performance Analysis</h3>
+    <p>
+      Although Emiliano Mart&iacute;nez registered just two saves across the entire 120 minutes, his contribution was arguably the single most decisive factor in securing the World Cup trophy for Argentina. Beyond his tactical shot-stopping, Mart&iacute;nez masterfully commanded the emotional pulse of the match. His legacy in this final was etched not by high save volume, but by an extraordinary, clutch performance in the high-stakes moments—most notably his legendary 122' denial of Kolo Muani (S3), followed by his masterclass in psychological gamesmanship during the penalty shootout.
+    </p>
+    
+<figure class="shot-fig">
+  <div class="fig-header">
+    <span class="fig-id">Figure 9 · Shot S3</span>
+    <span class="fig-meta">
+      <span class="pill fra">France</span>
+      <span class="sep">·</span>
+      <span>Randal Kolo Muani</span>
+      <span class="sep">·</span>
+      <span>122' (ET2)</span>
+      <span class="sep">·</span>
+      <span class="pill saved">Saved</span>
+    </span>
+  </div>
+  <img src="shots/france_shots/non_goal_shots/4_122_Randal Kolo Muani_Saved.png">
+  <img src="shots/france_shots/non_goal_shots/4_122_Randal Kolo Muani_Saved_Game_Picture.png">
+    <strong>Shot S3 &mdash; The Save of the Century.</strong> A long ball from Ibrahima Konat&eacute; bypasses Argentina's backline, putting Kolo Muani 1v1 with Emiliano Mart&iacute;nez. No defender is within a 5-meter radius; the lane is 100% open. Instead of staying on his line, Mart&iacute;nez aggressively rushes out to narrow the angle &mdash; reducing the goalkeeper distance to 6.21 meters &mdash; and spreads his left leg wide in a hockey-style reflex save. The geometry of angle compression, executed under maximum pressure, denies what should have been a match-winning shot.
+    <div class="fig-stats">
+    </div>
+  </figcaption>
+</figure>
+
+
+    <p>The freeze frame (Figure 9) reveals the geometry in detail. Kolo Muani receives a long ball from Konat&eacute; completely bypasses Argentina's backline; no defender is within a 5-meter radius. The lane is 100% open.The angle is wide enough that a placed shot into either corner is essentially uncontested. Mart&iacute;nez aggressively rushes out, reducing the goalkeeper distance and <strong>compressing the shooting angle</strong>. With the angle halved, Kolo Muani's options collapse to a near-central trajectory &mdash; exactly where Mart&iacute;nez spreads his left leg wide in a hockey-style reflex save.</p>
+
+    <blockquote>
+    <p>
+      &ldquo;The ball was popping up, and I just managed to block it with my leg. It wasn't something I had trained for; it was pure intuition. I stayed calm, made myself as big as possible, and thankfully the ball hit me.&rdquo;
+      <br>
+      <strong style="color: var(--accent-1, #e63946); font-size: 0.9em;">&mdash; Emiliano Mart&iacute;nez on his 122' save against Kolo Muani</strong>
+    </p>    
+    </blockquote>
+
+  </div>
+</section>
+
+
+
+<section id="sec-5">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-eyebrow"><span class="num">section 05</span> Strategic Takeaways</div>
+      <h2 class="section-title">Strategic Takeaways &amp; Tactical Recommendations</h2>
+      <p class="section-deck">3 actionable findings distilled from the freeze frame evidence, with coach-facing recommendations for both attacking and defensive preparation.</p>
+    </div>
+
+    <h3><span class="h3-tag">5.1</span> Five Key Findings</h3>
+
+    <div class="callout">
+      <div class="callout-title">// Finding 01 &mdash; The Lautaro Substitution Was the Tactical Masterstroke</div>
+      <div class="callout-body">Lautaro Mart&iacute;nez's 102' introduction transformed Argentina's attack from a low-efficiency shooting side into a high-danger threat. Across his 4 extra-time shots, 3 featured a completely clear shot lane &mdash; versus only 1 of 5 for Argentina's pre-ET shots. His blind-side runs and reactive movement into dead spaces systematically dismantled France's low block.</div>
+      <div><strong>Recommendation:</strong> introduce a physically imposing, blind-side-running striker against fatigued low blocks in the final 30 minutes of knockout matches</div>
+    </div>
+
+    <div class="callout warn">
+      <div class="callout-title">// Finding 02 &mdash; Direct Transition Exposes Stretched Defensive Lines</div>
+      <div class="callout-body">Argentina's defensive collapse in the 70'-122' window was caused by France's shift to direct transition running. All 3 French analyzed shots in this window featured a completely clear shot lane &mdash; the Argentine backline was stretched and disconnected. The pattern is identical to the 2018 final's structural failures and represents a systemic weakness of high-pressing systems against direct counter-attacking substitutes.</div>
+      <div><strong>Recommendation:</strong> when leading in the final 20 minutes, deploy a dedicated rest-defense structure with at least one holding midfielder screening the back four.</div>
+    </div>
+
+    <div class="callout info">
+      <div class="callout-title">// Finding 03 &mdash; xG Models Systematically Underweight Chaos</div>
+      <div class="callout-body">
+        Messi's 107' rebound goal (xG = 0.488) and Mbapp&eacute;'s 80' volley (xG = 0.102) were both significantly more dangerous than their modelled probability suggested. In both cases, the gap was caused by structural factors the model cannot see: a grounded goalkeeper (S7), a completely clear shot lane (S1), and crucial player-specific factors. Traditional xG models treat every attempt agnostically, ignoring the high-calibre execution of elite finishers like Messi and Mbapp&eacute;. The identity, finishing proficiency, and body movement of the striker taking the shot inherently alter the true conversion probability.
+      </div>      
+      <div><strong>Recommendation:</strong> treat xG as a baseline narrative, not as ground truth; supplement with freeze-frame-derived lane clarity and goalkeeper state metrics.</div>
+    </div>
+  </div>
+</section>
+
+
+
+<section id="sec-6">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-eyebrow"><span class="num">section 06</span> Appendix</div>
+      <h2 class="section-title">Limitations of Standard xG Models</h2>
+      <p class="section-deck">Deconstructing Lionel Messi's 107' goal (xG = 0.488) as a case study in the structural blind spots of machine-learning-driven Expected Goals.</p>
+    </div>
+
+    <h3><span class="h3-tag">6.1</span> The Analytical Paradox &mdash; Messi's Rebound Goal (107')</h3>
+    <p>In the 107th minute, Lionel Messi scored Argentina's third goal from a rebound inside the six-yard box. Tactically and visually, this was virtually an <strong>open-goal situation</strong>: Hugo Lloris was completely displaced and lying on the grass after parrying Lautaro Mart&iacute;nez's initial shot, and the only remaining obstacle was a single French defender desperate to clear the ball off the goal line. Despite the objective simplicity of this finish &mdash; which felt conceptually easier and less contested than a standard penalty kick &mdash; the official StatsBomb xG model valued this opportunity at <strong>xG = 0.488</strong>, implying a marginally sub-50% chance of a goal. In reality, a world-class forward misses this specific opportunity less than 5% of the time.</p>
+
+    <div class="callout danger">
+      <div class="callout-title">// The Paradox in One Number</div>
+      <div class="callout-body">An xG = 0.488 implies that the model predicts this shot will not be converted into a goal. But the goal was scored, and an elite forward would convert this scenario approximately all the time.</div>
+    </div>
+
+    <h3><span class="h3-tag">6.2</span> Three Structural Flaws in Machine-Learning xG Models</h3>
+
+    <h4>Flaw 01 &mdash; The &quot;Grounded Goalkeeper&quot; Blind Spot</h4>
+    <p>Most standard xG models take into account the <span class="math-inline">(x, y)</span> coordinates of the goalkeeper, but they severely struggle to calculate the <strong>state or posture of the goalkeeper</strong>. The model recognizes that Lloris is spatially present in the box, but it does not register that he is horizontally neutralized on the grass and physically incapable of making a reflex save. Consequently, the model artificially deflates the chance quality by treating the goalkeeper as an active agent when, in fact, he is a passive obstacle occupying the same coordinates as a downed player. This is one of the largest source of xG error in chaotic rebound scenarios, and it cannot be resolved without integrating goalkeeper body-posture tracking &mdash; a feature currently absent from public event data feeds.</p>
+
+    <h4>Flaw 02 &mdash; Over-Weighting Defensive Proximity</h4>
+    <p>In the freeze frame of Messi's 107' shot, Dayot Upamecano is positioned directly on the goal line, structurally placed between Messi and the net. The xG algorithm registers a defender inside the shot laneat point-blank range, heavily penalizing the xG value because it assumes a high probability of a goal-line block. However, the model lacks the semantic understanding of <strong>momentum</strong>: Upamecano is moving backward in full sprint, facing his own goal, with no ability to redirect his body weight into a clean tactical block. A defender in the geometric lane is not the same as a defender capable of blocking; the model conflates the two and produces a probability that does not reflect the actual defensive capability.</p>
+
+    <h4>Flaw 03 &mdash; The Structural Bias Against Chaos</h4>
+    <p>Machine learning models are trained on hundreds of thousands of historical shots. The vast majority of shots taken from the same coordinate with a defender on the line involve an <strong>organized defensive wall or an upright goalkeeper</strong> &mdash; the &quot;average&quot; scenario that the model has seen most often. Because dynamic, chaotic double-save rebound sequences are statistical outliers in the training data, the model defaults to the average congested-scenario probability and thereby undervalues a highly clear scoring opportunity. This is a fundamental limitation of supervised learning on imbalanced data: rare but critical scenarios are systematically underweighted because they look superficially similar to common low-quality scenarios.</p>
+
+    <h4>Flaw 04 &mdash; The "Shooter Ability" Blind Spot</h4>
+    <p>Standard xG models evaluate shot opportunities based purely on spatial vectors and positioning, effectively treating every shooter as an <strong>"average player"</strong>. The algorithm assumes identical execution probability whether a chance falls to a center-back or an elite finisher like Lionel Messi. In high-pressure, micro-second situations, world-class forwards possess superior composure, technical accuracy, and execution speed that drastically elevate the true likelihood of scoring. By ignoring player identity and shooting skill metrics such as historical finishing above expected goals, the model fails to account for player quality, producing an idealized average probability rather than reflecting who is actually striking the ball.</p>    
+
+    <h3><span class="h3-tag">6.3</span> The Path Forward &mdash; Contextual Metrics</h3>
+    <p>This World Cup Final serves as a definitive case study proving that <strong>xG should never be treated as absolute truth, but rather as a baseline narrative</strong>. While metrics are incredibly useful for evaluating broad, sustained team performance over a 38-game season, they consistently falter in isolated, high-stakes moments of pure chaos. Lionel Messi's 0.488 xG goal is the ultimate reminder that football analytics must evolve beyond simple spatial coordinates. To truly capture the reality of the pitch, future iterations of data science must integrate advanced tracking that accounts for:</p>
+
+    <ul>
+      <li><strong>Player body orientation</strong> &mdash; open hip vs. closed hip dramatically affects the available shooting angles.</li>
+      <li><strong>Goalkeeper state</strong> &mdash; upright, grounded, mid-dive, or in transition. A simple three-state classification would resolve the S7 paradox.</li>
+      <li><strong>Momentum vectors</strong> &mdash; whether defenders are stationary, tracking, or in full backward sprint. Lane occupancy is necessary but not sufficient for blocking capability.</li>
+      <li><strong>Shot-lane clarity</strong> &mdash; a binary flag for whether any defender is geometrically inside the shooter-to-goalmouth cone.</li>
+      <li><strong>Visual sightline integrity</strong> &mdash; whether the goalkeeper's view of the ball's release point is screened by bodies in the lane.</li>
+    </ul>
+
+    <p>Until these features become standard in public event data, freeze frame analysis &mdash; of the kind demonstrated throughout this report &mdash; remains the most accessible method for recovering the contextual signal that xG alone cannot provide. The eight shots analyzed here are not anomalies; they are representative of the high-leverage moments that decide football matches. Treating them with the analytical rigor they require is the difference between a report that explains what happened and a report that explains why.</p>
+
+    <blockquote>
+<p>
+  Winning the 2022 World Cup Final was far more than a matter of on-paper statistics. While Argentina registered significantly more shots, generated a higher total xG, and completely dominated the match until the 70th minute, football proved how quickly the tide can turn in a matter of moments — transforming what looked like an easy victory into a deeply challenging and thrilling spectacle. Ultimately, Argentina prevailed because they manufactured clearer shot lanes, recovered faster from chaotic spells, and trusted their goalkeeper to execute that spectacular save.<br><br>
+  <strong>xG is the beginning of the story, not the end of it — freeze frames are how we read the rest.</strong>
+</p>    </blockquote>
+
+  </div>
+</section>
+
+
+</main>
+
+
+<footer class="report-footer">
+  <div class="container">
+    <div class="footer-brand"><span class="accent">Football Data Analysis Mentorship By Sara Bentelli</span></div>
+    <div class="footer-brand"><span class="accent">Amirhossein Moghimzadeh</span></div>
+  </div>
+</footer>
+
+
+</body>
+</html>

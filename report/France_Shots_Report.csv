@@ -1,0 +1,9 @@
+,shot_id,minute,period,shooter_name,shooter_x,shooter_y,goalkeeper_x,goalkeeper_y,shooter_gk_distance,teammate_player_count,opponent_player_count,blockers_in_shot_cone,opponent/teammate,xg,result
+0,03fb2918-e1e7-4ec8-89ff-7bc5531e853d,80,2,Kylian Mbappé Lottin,104.8,30.1,117.7,37.9,15.074813431681338,3,8,0,2.67,0.1017027,Goal
+1,08f2f203-cdc9-4146-99b6-818c5c32bf70,115,4,Kylian Mbappé Lottin,101.4,26.6,117.6,37.8,19.69466932954193,8,11,2,1.38,0.03075741,Blocked
+2,5dbcde3d-ba75-483d-a65f-72d2b99ff713,92,2,Kylian Mbappé Lottin,95.9,32.2,116.7,39.0,21.883326986543885,3,8,1,2.67,0.0324491,Blocked
+3,8d2a6599-cc25-41a2-acde-41d10194b5bd,93,2,Adrien Rabiot,108.9,28.5,118.3,36.4,12.278843593759138,8,10,1,1.25,0.09333491,Saved
+4,959edead-09fb-40b0-b6a3-72e73bd30d5a,122,4,Randal Kolo Muani,103.7,45.1,109.7,43.5,6.20966987850401,3,5,0,1.67,0.27751395,Saved
+5,9f6285ff-9b32-4a46-a4a0-74c1ca89276c,67,2,Randal Kolo Muani,113.4,34.6,118.3,38.3,6.1400325732034915,9,11,0,1.22,0.09618377,Off T
+6,b2d43671-a3e6-4709-9c0c-646442c1074c,70,2,Kylian Mbappé Lottin,102.5,27.9,117.1,37.3,17.364331256918586,5,10,0,2.0,0.050644457,Off T
+7,db8267ad-256a-450d-997f-382a4d545634,99,3,Youssouf Fofana,89.8,39.9,117.8,39.3,28.006427833624194,9,11,2,1.22,0.023031652,Blocked
